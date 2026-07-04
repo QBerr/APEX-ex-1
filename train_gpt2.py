@@ -348,10 +348,43 @@ for step in range(max_steps):
     t0 = time.time()
     last_step = (step == max_steps - 1)
 
-    
-    # TODO: Implement the training step
-    
-    
+    # calculate the validation loss once in a while (e.g. we do every 20 steps at first and later increase to 100)
+    if step % 20 == 0 or last_step:
+        model.eval()
+        with torch.no_grad():
+            x, y = val_loader.next_batch()
+            x, y = x.to(device), y.to(device)
+            logits, loss = model(x, targets=y)
+        if master_process:
+            print(f"step {step:5d} | val loss: {loss.item():.6f}")
+            with open(log_file, "a") as f:
+                f.write(f"{step} val {loss.item():.6f}\n")
+        model.train()
+
+    # get the data batch
+    x, y = train_loader.next_batch()
+    x, y = x.to(device), y.to(device)
+
+    # reset gradients
+    optimizer.zero_grad(set_to_none=True)
+
+    # forward the model 
+    logits, loss = model(x, targets=y)
+
+    # backward pass
+    loss.backward()
+
+    # "call torch.nn.utils.clip_grad_norm_ before performing the optimizer step" 
+    # - I want to ask later about this, but for now, let's just do it
+    norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+
+    # update learning rate
+    lr = get_lr(step)
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+
+    optimizer.step()
+
     if device_type == "cuda":
         torch.cuda.synchronize() # wait for the GPU to finish work
 
