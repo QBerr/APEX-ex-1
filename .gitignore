@@ -11,3 +11,6 @@ log/
 
 # Generated eval output
 eval_results.txt
+
+# Downloaded HellaSwag dataset cache
+hellaswag/
