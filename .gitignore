@@ -8,3 +8,6 @@ __pycache__/
 # Checkpoints / logs
 log/
 *.pt
+
+# Generated eval output
+eval_results.txt
